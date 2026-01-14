@@ -25,16 +25,35 @@ export interface CountyDetailsResponse {
 
 // Property types
 export interface PropertyDetails {
-  sheriff_#?: string;
-  court_case_#?: string;
-  sales_date?: string;
+  // Case information - both variations
+  'case_#'?: string;
+  'court_case_#'?: string;
+  case_title?: string;
   plaintiff?: string;
   defendant?: string;
+  assigned_to?: string;
+  
+  // Address - all variations
+  'address/description'?: string;
   address?: string;
+  description?: string;
+  
+  // Financial - both variations
+  opening_bid?: string;
   starting_bid?: string;
-  attorney?: string;
+  appraisal_amount?: string;
   appraised_value?: string;
-  parcel_#?: string;
+  
+  // Other details
+  attorney?: string;
+  writ?: string;
+  appraisal?: string;
+  plaintiff_appraisal?: string;
+  defendant_appraisal?: string;
+  referee_appraisal?: string;
+  'sheriff_#'?: string;
+  'parcel_#'?: string;
+  sales_date?: string;
 }
 
 export interface StatusHistory {

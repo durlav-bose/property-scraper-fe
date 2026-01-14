@@ -14,7 +14,7 @@ export function PropertyCard({ property }: { property: Property }) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-            {property.details?.address || 'Address not available'}
+            {property.addressLine || property.details?.['address/description'] || 'Address not available'}
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {property.countyName}
@@ -23,43 +23,43 @@ export function PropertyCard({ property }: { property: Property }) {
       </div>
 
       <div className="space-y-2 text-sm">
-        {property.details?.plaintiff && (
+        {(property.details?.case_title || property.details?.plaintiff) && (
           <div>
             <span className="text-gray-600 dark:text-gray-400">Plaintiff: </span>
             <span className="text-gray-900 dark:text-white">
-              {property.details.plaintiff}
+              {property.details.case_title || property.details.plaintiff}
             </span>
           </div>
         )}
 
-        {property.details?.defendant && (
+        {(property.details?.defendant || property.defendant) && (
           <div>
             <span className="text-gray-600 dark:text-gray-400">Defendant: </span>
             <span className="text-gray-900 dark:text-white">
-              {property.details.defendant}
+              {property.details.defendant || property.defendant}
             </span>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
-          {property.details?.starting_bid && (
+          {(property.details?.opening_bid || property.details?.starting_bid) && (
             <div>
               <span className="text-gray-600 dark:text-gray-400 block text-xs">
                 Starting Bid
               </span>
               <span className="text-gray-900 dark:text-white font-medium">
-                {property.details.starting_bid}
+                {property.details.opening_bid || property.details.starting_bid}
               </span>
             </div>
           )}
 
-          {property.details?.appraised_value && (
+          {(property.details?.appraisal_amount || property.details?.appraised_value) && (
             <div>
               <span className="text-gray-600 dark:text-gray-400 block text-xs">
                 Appraised Value
               </span>
               <span className="text-gray-900 dark:text-white font-medium">
-                {property.details.appraised_value}
+                {property.details.appraisal_amount || property.details.appraised_value}
               </span>
             </div>
           )}

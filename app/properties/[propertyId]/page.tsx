@@ -131,7 +131,7 @@ export default function PropertyDetailsPage() {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <CardTitle className="text-3xl mb-2">
-                {property.details?.address || 'Address not available'}
+                {property.addressLine || property.details?.['address/description'] || 'Address not available'}
               </CardTitle>
               <CardDescription className="text-lg">
                 {property.countyName}
@@ -167,32 +167,47 @@ export default function PropertyDetailsPage() {
 
         {/* Key Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-          {property.details?.address && (
-            <InfoRow label="Address" value={property.details.address} />
+          {(property.details?.case_title || property.details?.plaintiff) && (
+            <InfoRow label="Case Title / Plaintiff" value={property.details.case_title || property.details.plaintiff || ''} />
           )}
-          {property.details?.sales_date && (
-            <InfoRow label="Sales Date" value={property.details.sales_date} highlight />
-          )}
-          {property.details?.plaintiff && (
-            <InfoRow label="Plaintiff" value={property.details.plaintiff} />
+          {(property.details?.['case_#'] || property.details?.['court_case_#']) && (
+            <InfoRow label="Case #" value={property.details['case_#'] || property.details['court_case_#'] || ''} />
           )}
           {property.details?.defendant && (
             <InfoRow label="Defendant" value={property.details.defendant} />
           )}
-          {property.details?.starting_bid && (
-            <InfoRow label="Starting Bid" value={property.details.starting_bid} highlight />
+          {property.details?.sales_date && (
+            <InfoRow label="Sales Date" value={property.details.sales_date} highlight />
           )}
-          {property.details?.appraised_value && (
-            <InfoRow label="Appraised Value" value={property.details.appraised_value} highlight />
+          {(property.details?.opening_bid || property.details?.starting_bid) && (
+            <InfoRow label="Starting Bid" value={property.details.opening_bid || property.details.starting_bid || ''} highlight />
           )}
-          {property.details?.['sheriff_#'] && (
-            <InfoRow label="Sheriff #" value={property.details['sheriff_#']} />
+          {(property.details?.appraisal_amount || property.details?.appraised_value) && (
+            <InfoRow label="Appraised Value" value={property.details.appraisal_amount || property.details.appraised_value || ''} highlight />
           )}
-          {property.details?.['court_case_#'] && (
-            <InfoRow label="Court Case #" value={property.details['court_case_#']} />
+          {property.details?.plaintiff_appraisal && (
+            <InfoRow label="Plaintiff Appraisal" value={property.details.plaintiff_appraisal} />
+          )}
+          {property.details?.defendant_appraisal && (
+            <InfoRow label="Defendant Appraisal" value={property.details.defendant_appraisal} />
+          )}
+          {property.details?.referee_appraisal && (
+            <InfoRow label="Referee Appraisal" value={property.details.referee_appraisal} />
+          )}
+          {property.details?.writ && (
+            <InfoRow label="Writ" value={property.details.writ} />
           )}
           {property.details?.attorney && (
             <InfoRow label="Attorney" value={property.details.attorney} />
+          )}
+          {property.details?.assigned_to && (
+            <InfoRow label="Assigned To" value={property.details.assigned_to} />
+          )}
+          {property.details?.appraisal && (
+            <InfoRow label="Appraisal" value={property.details.appraisal} />
+          )}
+          {property.details?.['sheriff_#'] && (
+            <InfoRow label="Sheriff #" value={property.details['sheriff_#']} />
           )}
           {property.details?.['parcel_#'] && (
             <InfoRow label="Parcel #" value={property.details['parcel_#']} />

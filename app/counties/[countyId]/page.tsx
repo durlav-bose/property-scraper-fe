@@ -253,20 +253,20 @@ export default function CountyDetailsPage() {
                             href={`/properties/${property.propertyId}`}
                             className="hover:underline text-primary"
                           >
-                            {property.details?.address || 'Address not available'}
+                            {property.addressLine || property.details?.['address/description'] || property.details?.address || 'Address not available'}
                           </Link>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {property.details?.plaintiff || '-'}
+                          {property.details?.case_title?.split(' vs ')[0] || property.details?.plaintiff || '-'}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {property.details?.defendant || '-'}
+                          {property.details?.case_title?.split(' vs ')[1] || property.details?.defendant || property.defendant || '-'}
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {property.details?.starting_bid || '-'}
+                          {property.details?.opening_bid || property.details?.starting_bid || '-'}
                         </TableCell>
                         <TableCell className="text-right">
-                          {property.details?.appraised_value || '-'}
+                          {property.details?.appraisal_amount || property.details?.appraised_value || '-'}
                         </TableCell>
                         <TableCell className="text-center">
                           {currentStatus && (
