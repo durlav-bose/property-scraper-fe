@@ -15,23 +15,37 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export default function PropertyDetailsPage() {
   const params = useParams();
-  const propertyId = params.propertyId as string;
-
+  const stableId = params.propertyId as string; // Route param is still [propertyId] but contains stableId
+  
+  // Extract countyId from URL search params
+  const [countyId, setCountyId] = useState<string>('');
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (propertyId) {
+    // Get countyId from URL query params
+    const searchParams = new URLSearchParams(window.location.search);
+    console.log('searchParams', searchParams);
+    const county = searchParams.get('countyId');
+    console.log('county', county)
+    if (county) {
+      setCountyId(county);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (stableId && countyId) {
+      console.log("from use effect fetch property details")
       fetchPropertyDetails();
     }
-  }, [propertyId]);
+  }, [stableId, countyId]);
 
   const fetchPropertyDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/properties/${propertyId}`);
+      const response = await fetch(`${API_URL}/api/properties/stable/${stableId}?countyId=${countyId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -50,8 +64,10 @@ export default function PropertyDetailsPage() {
     try {
       setRefetching(true);
       setError(null);
-      const response = await fetch(`${API_URL}/api/properties/${propertyId}/refetch`, {
+      const response = await fetch(`${API_URL}/api/properties/stable/${stableId}/refetch`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ countyId }),
       });
 
       const data = await response.json();
@@ -99,6 +115,21 @@ export default function PropertyDetailsPage() {
     return <Badge variant={variant}>{status}</Badge>;
   };
 
+  // Extract text from HTML string
+  const stripHtml = (html: string | undefined): string => {
+    if (!html) return '';
+    // Remove HTML tags
+    const text = html.replace(/<[^>]*>/g, '');
+    // Decode HTML entities
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+  };
+
+  const displayAddress = stripHtml(property.addressLine) || 
+    stripHtml(property.details?.['address/description']) || 
+    'Address not available';
+
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
@@ -131,7 +162,7 @@ export default function PropertyDetailsPage() {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <CardTitle className="text-3xl mb-2">
-                {property.addressLine || property.details?.['address/description'] || 'Address not available'}
+                {displayAddress}
               </CardTitle>
               <CardDescription className="text-lg">
                 {property.countyName}
@@ -180,7 +211,7 @@ export default function PropertyDetailsPage() {
             <InfoRow label="Sales Date" value={property.details.sales_date} highlight />
           )}
           {(property.details?.opening_bid || property.details?.starting_bid) && (
-            <InfoRow label="Starting Bid" value={property.details.opening_bid || property.details.starting_bid || ''} highlight />
+            <InfoRow label="Starting Bid" value={stripHtml(property.details?.opening_bid) || stripHtml(property.details?.starting_bid) || '-'} highlight />
           )}
           {(property.details?.appraisal_amount || property.details?.appraised_value) && (
             <InfoRow label="Appraised Value" value={property.details.appraisal_amount || property.details.appraised_value || ''} highlight />

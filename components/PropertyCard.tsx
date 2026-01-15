@@ -6,15 +6,33 @@ export function PropertyCard({ property }: { property: Property }) {
     ? property.status_history[property.status_history.length - 1]
     : null;
 
+  // Extract text from HTML string
+  const stripHtml = (html: string | undefined): string => {
+    if (!html) return '';
+    // Remove HTML tags
+    const text = html.replace(/<[^>]*>/g, '');
+    // Decode HTML entities
+    if (typeof document !== 'undefined') {
+      const textarea = document.createElement('textarea');
+      textarea.innerHTML = text;
+      return textarea.value;
+    }
+    return text;
+  };
+
+  const displayAddress = stripHtml(property.addressLine) || 
+    stripHtml(property.details?.['address/description']) || 
+    'Address not available';
+
   return (
     <Link
-      href={`/properties/${property.propertyId}`}
+      href={`/properties/${property.stableId}?countyId=${property.countyId}`}
       className="block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow p-6"
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-            {property.addressLine || property.details?.['address/description'] || 'Address not available'}
+            {displayAddress}
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {property.countyName}
@@ -48,7 +66,7 @@ export function PropertyCard({ property }: { property: Property }) {
                 Starting Bid
               </span>
               <span className="text-gray-900 dark:text-white font-medium">
-                {property.details.opening_bid || property.details.starting_bid}
+                {stripHtml(property.details.opening_bid) || stripHtml(property.details.starting_bid)}
               </span>
             </div>
           )}
@@ -59,7 +77,7 @@ export function PropertyCard({ property }: { property: Property }) {
                 Appraised Value
               </span>
               <span className="text-gray-900 dark:text-white font-medium">
-                {property.details.appraisal_amount || property.details.appraised_value}
+                {stripHtml(property.details.appraisal_amount) || stripHtml(property.details.appraised_value)}
               </span>
             </div>
           )}
