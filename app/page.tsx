@@ -117,11 +117,13 @@ export default function HomePage() {
     }
   };
 
-  const handleRefetchProperty = async (propertyId: string) => {
+  const handleRefetchProperty = async (stableId: string, countyId: string) => {
     try {
-      setRefetching(propertyId);
-      const response = await fetch(`${API_URL}/api/properties/${propertyId}/refetch`, {
+      setRefetching(stableId);
+      const response = await fetch(`${API_URL}/api/properties/stable/${stableId}/refetch`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ countyId }),
       });
 
       const data = await response.json();
@@ -151,6 +153,17 @@ export default function HomePage() {
     return <Badge variant={variant}>{status}</Badge>;
   };
 
+  // Extract text from HTML string
+  const stripHtml = (html: string | undefined): string => {
+    if (!html) return '';
+    // Remove HTML tags
+    const text = html.replace(/<[^>]*>/g, '');
+    // Decode HTML entities
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Section */}
@@ -162,14 +175,14 @@ export default function HomePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 items-center justify-left">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">Limit Counties:</label>
               <Input
                 type="number"
                 value={limitCounties}
                 onChange={(e) => setLimitCounties(parseInt(e.target.value) || 1)}
-                className="w-20"
+                className="w-20 h-7"
                 min="1"
               />
               <Button onClick={handleScrape} disabled={scraping}>
@@ -180,7 +193,7 @@ export default function HomePage() {
                   </>
                 ) : (
                   <>
-                    <Database className="h-4 w-4" />
+                    <Database />
                     Start Scrape
                   </>
                 )}
@@ -188,12 +201,12 @@ export default function HomePage() {
             </div>
 
             <Button onClick={fetchFailedItems} variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle />
               View Failed Items
             </Button>
 
             <Button onClick={fetchCounties} variant="outline">
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw />
               Refresh
             </Button>
           </div>
@@ -257,7 +270,7 @@ export default function HomePage() {
                     >
                       <div>
                         <p className="font-medium">
-                          {property.details?.address || 'Address not available'}
+                          {stripHtml(property.details?.address) || stripHtml(property.addressLine) || 'Address not available'}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {property.countyName}
@@ -269,11 +282,11 @@ export default function HomePage() {
                         )}
                       </div>
                       <Button
-                        onClick={() => handleRefetchProperty(property.propertyId)}
-                        disabled={refetching === property.propertyId}
+                        onClick={() => handleRefetchProperty(property.stableId, property.countyId)}
+                        disabled={refetching === property.stableId}
                         size="sm"
                       >
-                        {refetching === property.propertyId ? 'Refetching...' : 'Refetch'}
+                        {refetching === property.stableId ? 'Refetching...' : 'Refetch'}
                       </Button>
                     </div>
                   ))}
@@ -328,7 +341,7 @@ export default function HomePage() {
                         : 'Never'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/counties/${county.countyId}`}>
+                      <Link href={`/counties/${county.countyId}?page=1`}>
                         <Button variant="outline" size="sm">
                           View Details
                         </Button>

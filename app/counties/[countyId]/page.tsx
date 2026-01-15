@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, RefreshCw, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,12 +10,16 @@ import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/Loading';
 import { ErrorMessage } from '@/components/ErrorMessage';
 import type { County, Property } from '@/types';
+import { useSearchParams, useRouter, usePathname, useParams } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export default function CountyDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname()
+  const page = Number(searchParams.get('page') ?? 1)
   const countyId = params.countyId as string;
 
   const [county, setCounty] = useState<County | null>(null);
@@ -24,19 +27,29 @@ export default function CountyDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     if (countyId) {
-      fetchCountyDetails();
-      fetchProperties(currentPage);
-    }
-  }, [countyId, currentPage]);
+      const controller = new AbortController()
+      const signal = controller.signal
+      const run = async () => {
+        await Promise.all([
+          fetchCountyDetails(signal),
+          fetchProperties(page, signal)
+        ])
+      }
+      
+      run()
 
-  const fetchCountyDetails = async () => {
+      return () => controller.abort()
+    }
+  }, [countyId, page]);
+
+  const fetchCountyDetails = async (signal?: AbortSignal) => {
     try {
-      const response = await fetch(`${API_URL}/api/counties/${countyId}`);
+      setError(null);
+      const response = await fetch(`${API_URL}/api/counties/${countyId}`, { signal });
       const data = await response.json();
 
       if (data.success) {
@@ -44,16 +57,18 @@ export default function CountyDetailsPage() {
       } else {
         setError('Failed to fetch county details');
       }
-    } catch (err) {
-      setError('Error connecting to API');
+    } catch (err: any) {
+      if (err.name !== 'AbortError') setError('Error connecting to API');
     }
   };
 
-  const fetchProperties = async (page: number) => {
+  const fetchProperties = async (page: number, signal?: AbortSignal) => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(
-        `${API_URL}/api/counties/${countyId}/properties?page=${page}`
+        `${API_URL}/api/counties/${countyId}/properties?page=${page}`,
+        { signal }
       );
       const data = await response.json();
 
@@ -63,8 +78,8 @@ export default function CountyDetailsPage() {
       } else {
         setError('Failed to fetch properties');
       }
-    } catch (err) {
-      setError('Error connecting to API');
+    } catch (err: any) {
+      if (err.name !== 'AbortError') setError('Error connecting to API');
     } finally {
       setLoading(false);
     }
@@ -72,6 +87,7 @@ export default function CountyDetailsPage() {
 
   const handleRefetch = async () => {
     try {
+      console.log("refetch is calling")
       setRefetching(true);
       setError(null);
       const response = await fetch(`${API_URL}/api/counties/${countyId}/refetch`, {
@@ -80,15 +96,16 @@ export default function CountyDetailsPage() {
 
       const data = await response.json();
 
-      if (data.success) {
-        setTimeout(() => {
-          fetchCountyDetails();
-          fetchProperties(currentPage);
-        }, 2000);
-      } else {
-        setError('Failed to refetch county');
+      if (!data.success) {
+        setError('Refetch request failed');
       }
-    } catch (err) {
+
+      // Immediately refresh UI (backend might still be processing, but you’ll at least show status changes)
+      await Promise.all([
+        fetchCountyDetails(),
+        fetchProperties(page),
+      ])
+    } catch (err: any) {
       setError('Error refetching county');
     } finally {
       setRefetching(false);
@@ -116,6 +133,25 @@ export default function CountyDetailsPage() {
     const variant = status === 'completed' ? 'default' : status === 'failed' ? 'destructive' : 'secondary';
     return <Badge variant={variant}>{status}</Badge>;
   };
+
+  // Extract text from HTML string
+  const stripHtml = (html: string | undefined): string => {
+    if (!html) return '';
+    // Remove HTML tags
+    const text = html.replace(/<[^>]*>/g, '');
+    // Decode HTML entities
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+  };
+
+  const gotoPage = (nextPage: number) => {
+    if (nextPage < 1) return;
+    const sp = new URLSearchParams(searchParams.toString())
+    sp.set("page", String(nextPage))
+
+    router.push(`${pathname}?${sp.toString()}`, { scroll: true })
+  }
 
   return (
     <div className="space-y-6">
@@ -250,10 +286,10 @@ export default function CountyDetailsPage() {
                       <TableRow key={property._id}>
                         <TableCell className="font-medium">
                           <Link
-                            href={`/properties/${property.propertyId}`}
+                            href={`/properties/${property.stableId}?countyId=${countyId}`}
                             className="hover:underline text-primary"
                           >
-                            {property.addressLine || property.details?.['address/description'] || property.details?.address || 'Address not available'}
+                            {stripHtml(property.addressLine) || stripHtml(property.details?.['address/description']) || stripHtml(property.details?.address) || 'Address not available'}
                           </Link>
                         </TableCell>
                         <TableCell className="text-sm">
@@ -263,10 +299,10 @@ export default function CountyDetailsPage() {
                           {property.details?.case_title?.split(' vs ')[1] || property.details?.defendant || property.defendant || '-'}
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {property.details?.opening_bid || property.details?.starting_bid || '-'}
+                          {stripHtml(property.details?.opening_bid) || stripHtml(property.details?.starting_bid) || '-'}
                         </TableCell>
                         <TableCell className="text-right">
-                          {property.details?.appraisal_amount || property.details?.appraised_value || '-'}
+                          {stripHtml(property.details?.appraisal_amount) || stripHtml(property.details?.appraised_value) || '-'}
                         </TableCell>
                         <TableCell className="text-center">
                           {currentStatus && (
@@ -276,7 +312,7 @@ export default function CountyDetailsPage() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Link href={`/properties/${property.propertyId}`}>
+                          <Link href={`/properties/${property.stableId}?countyId=${countyId}`}>
                             <Button variant="outline" size="sm">
                               View Details
                             </Button>
@@ -292,8 +328,8 @@ export default function CountyDetailsPage() {
               {totalPages > 1 && (
                 <div className="mt-6 flex items-center justify-center gap-2">
                   <Button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
+                    onClick={() => gotoPage(page-1)}
+                    disabled={page === 1}
                     variant="outline"
                     size="sm"
                   >
@@ -301,11 +337,11 @@ export default function CountyDetailsPage() {
                     Previous
                   </Button>
                   <span className="text-sm text-muted-foreground px-4">
-                    Page {currentPage} of {totalPages}
+                    Page {page} of {totalPages}
                   </span>
                   <Button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => gotoPage(page + 1)}
+                    disabled={page === totalPages}
                     variant="outline"
                     size="sm"
                   >

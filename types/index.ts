@@ -70,26 +70,48 @@ export interface Defendant {
 
 export interface Property {
   _id: string;
-  propertyId: string;
+  
+  // ========== STABLE UNIQUE IDENTIFIER (PRIMARY KEY) ==========
+  stableId: string;
+  stableIdType: 'Sheriff #' | 'Court Case #' | 'Civil #' | 'Case #' | 'Book & Writ' | 'OPA #';
+  
+  // ========== COUNTY INFORMATION ==========
+  countyId: string;
   countyName: string;
-  countyId?: string;
+  
+  // ========== TEMPORARY PROPERTY ID (CHANGES OVER TIME) ==========
+  currentPropertyId?: string;
+  lastKnownPropertyId?: string;
+  propertyIdLastUpdated?: string;
+  
+  // ========== IDENTIFIERS ==========
+  uniqueIdentifier?: string;
   detailUrl: string;
+  
+  // ========== PROPERTY DETAILS ==========
   details: PropertyDetails;
-  status_history: StatusHistory[];
-  scrapingStatus?: string;
-  hasDetails?: boolean;
-  defendants?: Defendant[];
-  createdAt?: string;
-  updatedAt?: string;
+  
+  // ========== PARSED FIELDS ==========
   addressLine?: string;
   state?: string;
   zipCode?: string;
+  allCosts?: string | null;
   defendant?: string;
+  defendants?: Defendant[];
+  
+  // ========== STATUS INFORMATION ==========
+  status_history: StatusHistory[];
   status_header?: string;
+  
+  // ========== SCRAPING METADATA ==========
+  scrapingStatus?: string;
+  hasDetails?: boolean;
   errorMessage?: string | null;
   lastAttempt?: string;
-  uniqueIdentifier?: string;
-  allCosts?: string | null;
+  
+  // ========== TIMESTAMPS ==========
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PropertyListResponse {
